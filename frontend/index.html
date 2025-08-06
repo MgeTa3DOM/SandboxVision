@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌌 KaggleForge Latent Space - Ultimate Edition</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- HUD Principal -->
+    <div id="main-hud">
+        <div class="stats-container">
+            <div class="stat-block">
+                <div class="stat-label">Agents Actifs</div>
+                <div class="stat-value" id="active-agents">0</div>
+            </div>
+            <div class="stat-block">
+                <div class="stat-label">Tâches/Sec</div>
+                <div class="stat-value" id="tasks-per-sec">0</div>
+            </div>
+            <div class="stat-block">
+                <div class="stat-label">Efficacité</div>
+                <div class="stat-value" id="efficiency">0%</div>
+            </div>
+        </div>
+        <div class="stats-container">
+            <div class="stat-block">
+                <div class="stat-label">Modèles</div>
+                <div class="stat-value" id="model-count">0</div>
+            </div>
+            <div class="stat-block">
+                <div class="stat-label">Datasets</div>
+                <div class="stat-value" id="dataset-count">0</div>
+            </div>
+            <div class="stat-block">
+                <div class="stat-label">Connexions</div>
+                <div class="stat-value" id="connection-count">0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panneau d'information -->
+    <div id="info-panel">
+        <h2 id="info-title"></h2>
+        <div id="info-metrics"></div>
+    </div>
+
+    <!-- Mini-map -->
+    <div id="minimap">
+        <canvas id="minimap-canvas"></canvas>
+    </div>
+
+    <!-- Contrôles -->
+    <div id="controls">
+        <div class="control-group">
+            <strong>Déplacement:</strong> <span class="key">W</span><span class="key">A</span><span
+                class="key">S</span><span class="key">D</span>
+        </div>
+        <div class="control-group">
+            <strong>Vol:</strong> <span class="key">ESPACE</span> monter | <span class="key">SHIFT</span> descendre
+        </div>
+        <div class="control-group">
+            <strong>Interaction:</strong> <span class="key">CLIC GAUCHE</span> sélectionner | <span class="key">CLIC
+                DROIT</span> créer
+        </div>
+    </div>
+
+    <!-- Crosshair -->
+    <div id="crosshair"></div>
+
+    <!-- Menu de création -->
+    <div id="creation-menu">
+        <h3>🛠️ Créer un Élément</h3>
+        <button class="creation-button" onclick="createNewElement('agent')">🤖 Nouvel Agent</button>
+        <button class="creation-button" onclick="createNewElement('model')">🧠 Nouveau Modèle</button>
+        <button class="creation-button" onclick="createNewElement('dataset')">📊 Nouveau Dataset</button>
+        <button class="creation-button" onclick="closeCreationMenu()">❌ Annuler</button>
+    </div>
+
+    <!-- Zone de notifications -->
+    <div id="notifications"></div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+        }
+    }
+    </script>
+    <script type="module" src="app.js"></script>
+</body>
+
+</html>

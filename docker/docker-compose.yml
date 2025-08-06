@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: sandboxvision-backend
+    ports:
+      - "8765:8765"
+    restart: unless-stopped
+
+  frontend:
+    image: nginx:alpine
+    container_name: sandboxvision-frontend
+    ports:
+      - "8080:80"
+    volumes:
+      - ../frontend:/usr/share/nginx/html:ro
+    depends_on:
+      - backend
+    restart: unless-stopped
