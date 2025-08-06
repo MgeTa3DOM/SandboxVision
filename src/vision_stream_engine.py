@@ -6,6 +6,7 @@ from datetime import datetime
 from dataclasses import dataclass, field
 from typing import Dict, Any, Optional, List, Callable
 import logging
+from src.config import config
 
 
 @dataclass
@@ -30,52 +31,70 @@ class VisionFrame:
         }
 
 
-class VisionStreamEngine:
-    def __init__(self, buffer_size: int = 1000):
-        self.subscribers: List[Callable] = []
-        self.streaming = False
-        self.stream_thread = None
+class VisionDataSource:
+    """Abstracts the source of vision data, allowing for interchangeable sources."""
 
-    def subscribe(self, callback: Callable):
-        self.subscribers.append(callback)
+    def __init__(self):
+        pass
 
-    async def capture_vision(self, frame: VisionFrame):
-        tasks = []
-        for subscriber in self.subscribers:
-            if asyncio.iscoroutinefunction(subscriber):
-                tasks.append(asyncio.create_task(subscriber(frame)))
-            else:
-                subscriber(frame)
-        if tasks:
-            await asyncio.gather(*tasks)
+    def get_frame(self) -> VisionFrame:
+        """Returns a new vision frame. To be implemented by subclasses."""
+        raise NotImplementedError
 
-    def _generate_simulated_frame(self) -> VisionFrame:
+
+class SimulatedVisionDataSource(VisionDataSource):
+    """Generates simulated vision data for testing and development."""
+
+    def get_frame(self) -> VisionFrame:
         vision_types = ["activation", "thought", "decision", "action"]
         return VisionFrame(
             timestamp=datetime.now().timestamp(),
-            agent_id=f"agent_{np.random.randint(1, 5)}",
+            agent_id=f"agent_{np.random.randint(1, config.SIMULATED_AGENT_COUNT + 1)}",
             vision_type=np.random.choice(vision_types),
             data={"value": np.random.rand()},
             confidence=np.random.uniform(0.7, 1.0),
         )
 
+
+class VisionStreamEngine:
+    def __init__(self, data_source: VisionDataSource, buffer_size: int = 1000):
+        self.data_source = data_source
+        self.subscribers: List[Callable] = []
+        self.streaming = False
+        self._stream_task: Optional[asyncio.Task] = None
+
+    def subscribe(self, callback: Callable):
+        self.subscribers.append(callback)
+
+    async def _notify_subscribers(self, frame: VisionFrame):
+        """Asynchronously notifies all subscribers, with error handling."""
+        for subscriber in self.subscribers:
+            try:
+                if asyncio.iscoroutinefunction(subscriber):
+                    await subscriber(frame)
+                else:
+                    subscriber(frame)
+            except Exception as e:
+                logging.error(f"Error in subscriber {subscriber.__name__}: {e}")
+
     async def _stream_loop(self):
+        """The main loop that generates and processes vision frames."""
         while self.streaming:
-            frame = self._generate_simulated_frame()
-            await self.capture_vision(frame)
+            frame = self.data_source.get_frame()
+            await self._notify_subscribers(frame)
             await asyncio.sleep(0.5)
 
-    def _run_stream_loop_in_thread(self):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(self._stream_loop())
-        loop.close()
-
     def start_streaming(self):
+        """Starts the vision stream in a non-blocking manner."""
         if not self.streaming:
             self.streaming = True
-            self.stream_thread = threading.Thread(
-                target=self._run_stream_loop_in_thread, daemon=True
-            )
-            self.stream_thread.start()
-            logging.info("🎬 Streaming de vision démarré.")
+            self._stream_task = asyncio.create_task(self._stream_loop())
+            logging.info("Vision stream started.")
+
+    def stop_streaming(self):
+        """Stops the vision stream gracefully."""
+        if self.streaming:
+            self.streaming = False
+            if self._stream_task:
+                self._stream_task.cancel()
+                logging.info("Vision stream stopped.")

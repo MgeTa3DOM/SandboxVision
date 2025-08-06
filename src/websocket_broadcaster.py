@@ -11,23 +11,27 @@ class WebSocketBroadcaster:
         self.host = host
         self.port = port
         self.clients = set()
+        self._server = None
         logging.info(
-            f"📡 WebSocket Broadcaster prêt à écouter sur ws://{self.host}:{self.port}"
+            f"WebSocket Broadcaster initialized to listen on ws://{self.host}:{self.port}"
         )
 
-    async def register(self, websocket):
+    async def _register(self, websocket):
+        """Registers a new client connection."""
         self.clients.add(websocket)
         logging.info(
-            f"New connection: {websocket.remote_address}. Total clients: {len(self.clients)}"
+            f"New client connection from {websocket.remote_address}. Total clients: {len(self.clients)}"
         )
 
-    async def unregister(self, websocket):
+    async def _unregister(self, websocket):
+        """Unregisters a client connection."""
         self.clients.remove(websocket)
         logging.info(
-            f"Connection closed: {websocket.remote_address}. Total clients: {len(self.clients)}"
+            f"Client connection closed from {websocket.remote_address}. Total clients: {len(self.clients)}"
         )
 
     async def broadcast(self, message: dict):
+        """Broadcasts a message to all connected clients."""
         if not self.clients:
             return
 
@@ -35,33 +39,53 @@ class WebSocketBroadcaster:
             {**message, "broadcast_ts": datetime.now().isoformat()}
         )
 
-        # Create tasks for sending messages
-        tasks = [
-            self._send_to_client(client, message_to_send)
-            for client in self.clients.copy()
-        ]
-        await asyncio.gather(*tasks)
+        # Use asyncio.gather to send messages concurrently
+        await asyncio.gather(
+            *[self._send_to_client(client, message_to_send) for client in self.clients]
+        )
 
     async def _send_to_client(self, client, message: str):
-        """Safely send a message to a single client, handling potential errors."""
+        """Safely sends a message to a single client, handling potential errors."""
         try:
             await client.send(message)
         except websockets.exceptions.ConnectionClosed:
             logging.warning(
-                f"Attempted to send to a closed connection: {client.remote_address}. Client will be removed."
+                f"Attempted to send to a closed connection: {client.remote_address}."
             )
-            # The client will be properly unregistered by the main handler
         except Exception as e:
-            logging.error(f"Error sending message to {client.remote_address}: {e}")
+            logging.error(
+                f"Error sending message to {client.remote_address}: {e}", exc_info=True
+            )
 
-    async def handler(self, websocket, path):
-        await self.register(websocket)
+    async def _handler(self, websocket, path):
+        """Handles incoming WebSocket connections."""
+        await self._register(websocket)
         try:
             await websocket.wait_closed()
         finally:
-            await self.unregister(websocket)
+            await self._unregister(websocket)
 
     async def start(self):
-        server = await websockets.serve(self.handler, self.host, self.port)
-        logging.info("✅ Serveur WebSocket démarré.")
-        await server.wait_closed()
+        """Starts the WebSocket server."""
+        try:
+            self._server = await websockets.serve(self._handler, self.host, self.port)
+            logging.info(
+                f"WebSocket server started successfully on ws://{self.host}:{self.port}."
+            )
+            await self._server.wait_closed()
+        except OSError as e:
+            logging.error(
+                f"Failed to start WebSocket server on {self.host}:{self.port}. Error: {e}"
+            )
+            raise
+        except Exception as e:
+            logging.error(
+                f"An unexpected error occurred while starting the server: {e}"
+            )
+            raise
+
+    def stop(self):
+        """Stops the WebSocket server gracefully."""
+        if self._server:
+            self._server.close()
+            logging.info("WebSocket server is shutting down.")

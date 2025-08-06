@@ -1,21 +1,32 @@
 # src/config.py
-import os
+from pydantic import BaseSettings, Field
 
 
-class Config:
+class AppConfig(BaseSettings):
     """
-    Configuration settings for the SandboxVision application.
-    Settings are read from environment variables with sensible defaults.
+    Defines the application's configuration using Pydantic for validation.
+    Reads from environment variables and provides default values.
     """
 
     # WebSocket Server Configuration
-    WEBSOCKET_HOST = os.getenv("WEBSOCKET_HOST", "0.0.0.0")
-    WEBSOCKET_PORT = int(os.getenv("WEBSOCKET_PORT", 8765))
+    WEBSOCKET_HOST: str = Field("0.0.0.0", env="WEBSOCKET_HOST")
+    WEBSOCKET_PORT: int = Field(8765, env="WEBSOCKET_PORT")
 
     # Logging Configuration
-    LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
-    LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
+    LOG_LEVEL: str = Field("INFO", env="LOG_LEVEL")
+    LOG_FORMAT: str = Field(
+        "%(asctime)s - %(levelname)s - %(message)s", env="LOG_FORMAT"
+    )
+
+    # Vision Engine Configuration
+    VISION_BUFFER_SIZE: int = Field(1000, env="VISION_BUFFER_SIZE")
+    SIMULATED_AGENT_COUNT: int = Field(4, env="SIMULATED_AGENT_COUNT")
+
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+        case_sensitive = False
 
 
 # Instantiate the config
-config = Config()
+config = AppConfig()
