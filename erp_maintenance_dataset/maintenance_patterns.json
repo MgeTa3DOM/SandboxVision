@@ -1,0 +1,26 @@
+{
+    "patterns": [
+        {
+            "name": "gpu_memory_pressure",
+            "match": {
+                "gpu.available": true
+            },
+            "recommendations": [
+                "Reduce batch size",
+                "Clear CUDA cache periodically",
+                "Prefer fp16 if supported"
+            ]
+        },
+        {
+            "name": "high_cpu_usage",
+            "match": {
+                "cpu.user_gt": 70
+            },
+            "recommendations": [
+                "Profile hot loops",
+                "Enable vectorized numpy/pandas ops",
+                "Use multiprocessing where safe"
+            ]
+        }
+    ]
+}

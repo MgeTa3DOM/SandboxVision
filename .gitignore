@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.mypy_cache/
+.pytest_cache/
+output/
+erp_logs/
+erp_backups/
