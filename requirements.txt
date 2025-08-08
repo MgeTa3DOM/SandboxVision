@@ -1,0 +1,10 @@
+numpy
+pandas
+ipython
+ipywidgets
+matplotlib
+seaborn
+torch
+plotly
+nest_asyncio
+psutil
